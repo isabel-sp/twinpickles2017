@@ -70,6 +70,32 @@ class PX_data(object):
     #     d_z = sum(self.mini_integrate(v_avg_z, moving_avg_a*dt))
     #     return [d_x, d_y, d_z]
 
+    #IMU PROCESSING FUNCTIONS
+    def calculate_displacement(self, accelerations, dt):
+        displacement = 0
+        velocity = 0
+        for acceleration in accelerations:
+            velocity += acceleration * 3 * dt
+            displacement += velocity * 3 * dt
+            return displacement
+
+    def calculate_group_average(self, group_size):
+        averaged_accelerations_x = []
+        averaged_accelerations_y = []
+        for i in range(0, len(self.accelerations), group_size):
+            group_x = self.accelerations['x'][i:i+group_size]
+            group_y = self.accelerations['y'][i:i+group_size]
+            average_x = sum(group_x) / len(group_size)
+            average_y = sum(group_y) / len(group_size)
+            averaged_accelerations_x.append(average_x)
+            averaged_accelerations_y.append(average_y)
+        return [averaged_accelerations_x, averaged_accelerations_y]
+
+    def current_pos(self, displacement_x, displacement_y):
+        return [self.x + displacement_x, self.y + displacement_y]
+
+
+
     def request_message_interval(self, message_input: str, frequency_hz: float):
         message_name = "MAVLINK_MSG_ID_" + message_input
         message_id = getattr(mavutil.mavlink, message_name)

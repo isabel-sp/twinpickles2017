@@ -1,17 +1,14 @@
-import PX_data from readdata as data
-
-
 referenceX = 0
 referenceY = 0
 
 def set_zero(zeroX, zeroY):
+    global referenceX
+    global referenceY
     referenceX = zeroX
     referenceY = zeroY
 
 
-def PID():
-    referenceX = 0
-    referenceY = 0
+def PID(x_displacement, y_displacement):
 
     Kp = 0
     #Kd = 0
@@ -30,8 +27,8 @@ def PID():
 
     max_dist = .5
 
-    currentX = x
-    currentY = y
+    currentX = x_displacement
+    currentY = y_displacement
     # Implement moving average
     errorX = referenceX - currentX
     errorY = referenceY - currentY
@@ -64,7 +61,7 @@ def PID():
     else:
         #send to x2 motor
         percent1 = 1500 + 400*cmdX/max_dist
-        percent2 = 1500 + 400*cmd/max_dist
+        percent2 = 1500 + 400*cmdX/max_dist
 
 
     if cmdY <= 0:
