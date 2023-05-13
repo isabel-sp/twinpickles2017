@@ -1,4 +1,4 @@
-
+import PX_data from readdata as data
 
 
 referenceX = 0
@@ -8,7 +8,8 @@ def set_zero(zeroX, zeroY):
     referenceX = zeroX
     referenceY = zeroY
 
-def PID(x, y):
+
+def PID():
     referenceX = 0
     referenceY = 0
 
@@ -49,32 +50,31 @@ def PID(x, y):
 
     percent1 = 0 # x1
     percent2 = 0 # x2
-    percent3 = 0 # x3
-    percent4 = 0 # x4
+    percent3 = 0 # y1
+    percent4 = 0 # y2
     # Hypothetical Max = .5m
     # Velocity = distance/time
+    offset = 400
 
     if cmdX <= 0:
         #send to x1 motor
-        percent1 = -cmdX/max_dist
-        percent2 = -cmdX/max_dist
+        percent1 = 1500 - 400*cmdX/max_dist 
+        percent2 = 1500 - 400*cmdX/max_dist
 
-    if cmdX > 0:
+    else:
         #send to x2 motor
-        percent2 = cmdX/max_dist
-        percent1 = cmdX/max_dist
+        percent1 = 1500 + 400*cmdX/max_dist
+        percent2 = 1500 + 400*cmd/max_dist
 
 
     if cmdY <= 0:
         #send to y1 motor
-        percent3 = -cmdY_max_dist
-        percent4 = -cmdY/max_dist
+        percent3 = 1500 - 400*cmdY/max_dist
+        percent4 = 1500 - 400*cmdY/max_dist
 
-    if cmdY > 0:
+    else:
         #send to y2 motor
-        pass
-        percent3 = cmdY/max_dist
-        percent4 = cmdY/max_dist
-
+        percent3 = 1500 + 400*cmdY/max_dist
+        percent4 = 1500 + 400*cmdY/max_dist
         
     return [percent1, percent2, percent3, percent4]

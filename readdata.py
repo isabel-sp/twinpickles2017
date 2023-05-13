@@ -70,13 +70,6 @@ class PX_data(object):
     #     d_z = sum(self.mini_integrate(v_avg_z, moving_avg_a*dt))
     #     return [d_x, d_y, d_z]
 
-        
-        
-
-    
-
-    
-
     def request_message_interval(self, message_input: str, frequency_hz: float):
         message_name = "MAVLINK_MSG_ID_" + message_input
         message_id = getattr(mavutil.mavlink, message_name)
@@ -86,8 +79,8 @@ class PX_data(object):
             message_id, 1e6 / frequency_hz, 0, 0, 0, 0, 0)
         print("Requested the message successfully.")
     
-    def request_messages(self):
-        request_message_interval(self.master, 'LOCAL_POSITION_NED', 2)
+    # def request_messages(self):
+    #     request_message_interval(self.master, 'LOCAL_POSITION_NED', 2)
     
     def request_messages_custom(self, id):
         request_message_interval(self.master, id, 5)
