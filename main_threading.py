@@ -83,15 +83,15 @@ def sediment_input():
 PIXHAWK DATA READING
 '''
 
-# PX = readdata.PX_data()
-# print('setup & connected to PX')
-# PX.request_messages()
-# print('PX messages requested')
+PX = readdata.PX_data()
+print('setup & connected to PX')
+PX.request_messages()
+print('PX messages requested')
 
-# def px_update_data():
-#     while True:
-#         PX.update_position()
-#         sleep(data_read_period)
+def px_update_data():
+    while True:
+        PX.update_position()
+        sleep(data_read_period)
 
 
 '''
@@ -106,26 +106,25 @@ def stationkeep():
 
             print(thrusterarduino.ser)
             
-            #make sure thruster is initialized
+            #INITIALIZE THRUSTER
+            #ZERO CONTROL LOOP
             if thrusterarduino.ser == None:
                 print("serial not initialized? initializing now!")
                 thrusterarduino.thruster_write_init() 
 
-            #simulate PID adjusting thruster power
-            if t0 >= 1600: t0 = 1500
-            else: t0 = t0 + 25
-            print('incremented t0')
+                controller = stationkeeping.control_loop()
 
-            '''
-            USING PIXHAWK DATA (OLD VERSION)
-            '''
-            # # print(PX.get_x(), PX.get_y())
-            # thruster_set = stationkeeping.PID(PX.get_x(), PX.get_y())
-            # set_thurster_power(thruster_set)
-            # # print(power_arr)
-            # print(PX.get_dxyz())
+            # #simulate PID adjusting thruster power
+            # if t0 >= 1600: t0 = 1500
+            # else: t0 = t0 + 25
+            # print('incremented t0')
 
-            thrusterarduino.thruster_write_power([t0, 1500, 1500, 1500])
+            controller.updatexy(PX.get_ax(), PX.get_ay())
+            power_arr = controller.PID()
+
+            print(power_arr)
+
+            thrusterarduino.thruster_write_power(power_arr)
             thrusterarduino.thruster_set_power()
             print('stationkeeping!')
 
@@ -141,9 +140,9 @@ THREADS
 '''
 
 t_sediment = Thread(target=sediment_input)
-# t_px = Thread(target=px_update_data)
+t_px = Thread(target=px_update_data)
 t_stationkeep = Thread(target=stationkeep)
 
 t_sediment.start()
-# t_px.start()
+t_px.start()
 t_stationkeep.start()

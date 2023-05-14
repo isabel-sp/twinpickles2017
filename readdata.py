@@ -5,6 +5,7 @@ Connect to Pixhawk and request messages
 # Import mavutil
 from pymavlink import mavutil
 import numpy
+import math
 
 def request_message_interval(master, message_input: str, frequency_hz: float):
     message_name = "MAVLINK_MSG_ID_" + message_input
@@ -14,6 +15,10 @@ def request_message_interval(master, message_input: str, frequency_hz: float):
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
         message_id, 1e6 / frequency_hz, 0, 0, 0, 0, 0)
     print("Requested the message successfully.")
+
+def convert_acc(ax, ay):
+    c = math.sqrt(2)/2
+    return [c*ax + c*ay, -c*ax + c*ay]
 
 
 class PX_data(object):
@@ -25,7 +30,6 @@ class PX_data(object):
 
         self.acc = {'x': [0], 'y': [0], 'z': [0]}
 
-    
     def get_x(self): return self.x
     def get_y(self): return self.y
     def get_acc(self): return self.acc
@@ -80,20 +84,19 @@ class PX_data(object):
             return displacement
 
     def calculate_group_average(self, group_size):
-        averaged_accelerations_x = []
-        averaged_accelerations_y = []
-        for i in range(0, len(self.accelerations), group_size):
-            group_x = self.accelerations['x'][i:i+group_size]
-            group_y = self.accelerations['y'][i:i+group_size]
+        averaged_acc_x = []
+        averaged_acc_y = []
+        for i in range(0, len(self.acc), group_size):
+            group_x = self.acc['x'][i:i+group_size]
+            group_y = self.acc['y'][i:i+group_size]
             average_x = sum(group_x) / len(group_size)
             average_y = sum(group_y) / len(group_size)
-            averaged_accelerations_x.append(average_x)
-            averaged_accelerations_y.append(average_y)
-        return [averaged_accelerations_x, averaged_accelerations_y]
+            averaged_acc_x.append(average_x)
+            averaged_acc_y.append(average_y)
+        return [averaged_acc_x, averaged_acc_y]
 
     def current_pos(self, displacement_x, displacement_y):
         return [self.x + displacement_x, self.y + displacement_y]
-
 
 
     def request_message_interval(self, message_input: str, frequency_hz: float):
@@ -110,6 +113,7 @@ class PX_data(object):
     
     def request_messages_custom(self, id):
         request_message_interval(self.master, id, 5)
+
     
     def update_position(self):
         if self.master:
@@ -125,18 +129,14 @@ class PX_data(object):
             elif msg.get_type() == 'SCALED_IMU3':
                 # print(msg.to_dict())
                 print('IMU x y z acc', ((float)(msg.to_dict()['xacc'])), ((float)(msg.to_dict()['yacc'])), ((float)(msg.to_dict()['zacc'])))
-                if (len(self.acc['x']) > 10):
+                if (len(self.acc['x']) > 3):
                     self.acc['x'].pop(0)
                     self.acc['y'].pop(0)
                     self.acc['z'].pop(0)
                     
-                self.acc['x'].append((float)(msg.to_dict()['xacc']))
-                self.acc['y'].append((float)(msg.to_dict()['yacc']))
-                self.acc['z'].append((float)(msg.to_dict()['zacc']))
-
-
-
-
+                self.acc['x'].append(convert_acc((float)(msg.to_dict()['xacc'])))
+                self.acc['y'].append(convert_acc((float)(msg.to_dict()['yacc'])))
+                self.acc['z'].append(convert_acc((float)(msg.to_dict()['zacc'])))
 
 
 if __name__ == "__main__":
