@@ -4,100 +4,26 @@ Connect to Pixhawk and request messages
 
 # Import mavutil
 from pymavlink import mavutil
-import numpy
 import math
 
-def request_message_interval(master, message_input: str, frequency_hz: float):
-    message_name = "MAVLINK_MSG_ID_" + message_input
-    message_id = getattr(mavutil.mavlink, message_name)
-    master.mav.command_long_send(
-        master.target_system, master.target_component,
-        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
-        message_id, 1e6 / frequency_hz, 0, 0, 0, 0, 0)
-    print("Requested the message successfully.")
-
-def convert_acc(ax, ay):
-    c = math.sqrt(2)/2
-    return [c*ax + c*ay, -c*ax + c*ay]
 
 
-class PX_data(object):
-    def __init__(self, x = 0.0, y = 0.0):
-        self.master = mavutil.mavlink_connection('/dev/ttyUSB0,57600')
+class PX_sensors(object):
+    def __init__(self, port):
+        self.master = mavutil.mavlink_connection(port)
         # self.master.reboot_autopilot()
-        self.x = x
-        self.y = y
 
-        self.acc = {'x': [0], 'y': [0], 'z': [0]}
+        #NEED TO ADD: CALIBRATION MEASUREMENTS
+        self.ax0 = 0
+        self.ay0 = 40
+        self.acc = {'x': [self.ax0], 'y': [self.ay0]}
 
-    def get_x(self): return self.x
-    def get_y(self): return self.y
     def get_acc(self): return self.acc
 
-    # def displacement_xyz(self):
-    #     return [dx, dy, dz]
-
-    # def mini_integrate(self, L, dt):
-    #     return [(L[i] - L[i-1])*dt for i in range(1, len(L))]
-
-    # def get_acc_avg(self, i = 10, end = 0): 
-    #     # return self.acc['x']
-    #     l = len(self.acc['x'])
-    #     if l < i: return None
-    #     return {'x': numpy.average(self.acc['x'][l-end-i: l-end]), 'y': numpy.average(self.acc['y'][l-end-i: l-end]), 'z': numpy.average(self.acc['z'][l-end-i: l-end])}
-    
-    # def get_dxyz(self, dt = 0.25, moving_avg_a = 3, ai = 3):
-    #     print("CALLING ON ", self.acc)
-    #     a_avg_x = []
-    #     a_avg_y = []
-    #     a_avg_z = []
-    #     #moving average of acceleration values
-    #     for i in range(ai):
-    #         ai_avg = self.get_acc_avg(moving_avg_a, i*moving_avg_a)
-    #         if not ai_avg: return None
-    #         a_avg_x.append(ai_avg['x'])
-    #         a_avg_y.append(ai_avg['y'])
-    #         a_avg_z.append(ai_avg['z'])
-    #     print(a_avg_x)
-    #     print(a_avg_y)
-    #     print(a_avg_z)
-    #     #get set of velocity values
-    #     v_avg_x = self.mini_integrate(a_avg_x, moving_avg_a*dt)
-    #     v_avg_y = self.mini_integrate(a_avg_y, moving_avg_a*dt)
-    #     v_avg_z = self.mini_integrate(a_avg_z, moving_avg_a*dt)
-    #     print(v_avg_x)
-    #     print(v_avg_y)
-    #     print(v_avg_z)
-    #     #get displacements
-    #     d_x = sum(self.mini_integrate(v_avg_x, moving_avg_a*dt))
-    #     d_y = sum(self.mini_integrate(v_avg_y, moving_avg_a*dt))
-    #     d_z = sum(self.mini_integrate(v_avg_z, moving_avg_a*dt))
-    #     return [d_x, d_y, d_z]
-
-    #IMU PROCESSING FUNCTIONS
-    def calculate_displacement(self, accelerations, dt):
-        displacement = 0
-        velocity = 0
-        for acceleration in accelerations:
-            velocity += acceleration * 3 * dt
-            displacement += velocity * 3 * dt
-            return displacement
-
-    def calculate_group_average(self, group_size):
-        averaged_acc_x = []
-        averaged_acc_y = []
-        for i in range(0, len(self.acc), group_size):
-            group_x = self.acc['x'][i:i+group_size]
-            group_y = self.acc['y'][i:i+group_size]
-            average_x = sum(group_x) / len(group_size)
-            average_y = sum(group_y) / len(group_size)
-            averaged_acc_x.append(average_x)
-            averaged_acc_y.append(average_y)
-        return [averaged_acc_x, averaged_acc_y]
-
-    def current_pos(self, displacement_x, displacement_y):
-        return [self.x + displacement_x, self.y + displacement_y]
-
+    #converts raw IMU data to boat reference frame
+    def convert_acc(ax, ay):
+        c = math.sqrt(2)/2
+        return [c*ax + c*ay, -c*ax + c*ay]
 
     def request_message_interval(self, message_input: str, frequency_hz: float):
         message_name = "MAVLINK_MSG_ID_" + message_input
@@ -108,43 +34,31 @@ class PX_data(object):
             message_id, 1e6 / frequency_hz, 0, 0, 0, 0, 0)
         print("Requested the message successfully.")
     
-    # def request_messages(self):
-    #     request_message_interval(self.master, 'LOCAL_POSITION_NED', 2)
-    
-    def request_messages_custom(self, id):
-        request_message_interval(self.master, id, 5)
+    def request_messages(self, id):
+        self.request_message_interval(self.master, id, 10)
 
-    
-    def update_position(self):
+    def read_imu_data(self):
         if self.master:
             msg = self.master.recv_match()
             if not msg:
                 pass
-            # elif msg.get_type() == 'LOCAL_POSITION_NED':
-            #     pass
-            #     self.x = (float)(msg.to_dict()['x'])
-            #     self.y = (float)(msg.to_dict()['y'])
-            #     print('LOCAL_POSITION_NED X Y', ((float)(msg.to_dict()['x'])), ((float)(msg.to_dict()['y'])))
-            #     print('LOCAL_POSITION_NED VX VY', ((float)(msg.to_dict()['vx'])), ((float)(msg.to_dict()['vy'])))
             elif msg.get_type() == 'SCALED_IMU3':
-                # print(msg.to_dict())
                 print('IMU x y z acc', ((float)(msg.to_dict()['xacc'])), ((float)(msg.to_dict()['yacc'])), ((float)(msg.to_dict()['zacc'])))
+
                 if (len(self.acc['x']) > 3):
                     self.acc['x'].pop(0)
                     self.acc['y'].pop(0)
-                    self.acc['z'].pop(0)
+                    # self.acc['z'].pop(0)
                     
-                self.acc['x'].append(convert_acc((float)(msg.to_dict()['xacc'])))
-                self.acc['y'].append(convert_acc((float)(msg.to_dict()['yacc'])))
-                self.acc['z'].append(convert_acc((float)(msg.to_dict()['zacc'])))
+                self.acc['x'].append(self.convert_acc((float)(msg.to_dict()['xacc'])))
+                self.acc['y'].append(self.convert_acc((float)(msg.to_dict()['yacc'])))
+                # self.acc['z'].append(self.convert_acc((float)(msg.to_dict()['zacc'])))
 
 
 if __name__ == "__main__":
-    PX = PX_data()
-    # PX.request_messages()
-    # PX.request_messages_custom('HIGHRES_IMU')
-    PX.request_messages_custom('SCALED_IMU2')
+    PX = PX_sensors()
+    PX.request_messages('SCALED_IMU2')
 
     while True:
-        PX.update_position()
-        # print(PX.get_x())
+        PX.read_imu_data()
+        print(PX.get_acc())

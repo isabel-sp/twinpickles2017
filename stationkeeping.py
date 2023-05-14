@@ -1,62 +1,45 @@
 import numpy
 
-
-
 class control_loop(object):
     def __init__(self, ax0, ay0):
-        self.x = 0
-        self.y = 0
-        self.vx = 0
-        self.vy = 0
-        self.ax = ax0
-        self.ay = ay0
+        self.x, self.y = 0, 0
+        self.vx, self.vy = 0, 0
+        self.ax, self.ay = ax0, ay0
 
-    def update_xy(self, axi_new, ayi_new, dt):
+    def update_xy(self, ax_new, ay_new, dt):
         #ax and ay are arrays of the last k inputs
-        axi = numpy.average(axi_new)
-        ayi = numpy.average(ayi_new)
+        axi_new = numpy.average(ax_new)
+        ayi_new = numpy.average(ay_new)
         
-        #integrate
-        vxi = self.vx + dt * (axi - self.ax)
-        vyi = self.vy + dt * (ayi - self.ay)
+        #integrate using input & previous cycle input
+        vxi_new = self.vx + dt * (axi_new - self.ax)
+        vyi_new = self.vy + dt * (ayi_new - self.ay)
 
-        self.x = self.x + dt * (vxi - self.vx)
-        self.y = self.y + dt * (vyi - self.vy)
+        self.x = self.x + dt * (vxi_new - self.vx)
+        self.y = self.y + dt * (vyi_new - self.vy)
 
         #update old v and a with new values
-        self.ax = axi
-        self.ay = ayi
-        self.vx = vxi
-        self.vy = vyi
+        self.ax, self.ax = axi_new, ayi_new
+        self.vx, self.vy = vxi_new, vyi_new
 
     def PID(self):
-
-        x_displacement = self.x
-        y_displacement = self.y
+        '''
+        ERROR: x, y displacement is (0, 0) to (self.x, self.y)
+        '''
+        errorX = - self.x
+        errorY = - self.y
 
         Kp = 0
         #Kd = 0
         #Ki = 0
 
-        #errorIX = 0
-        #errorIY = 0
-
-        #d_errorX = 0
-        #d_errorY = 0
-
-        #past_errorX = 0
-        #past_errorY = 0
-
-        #delta_t = 0
+        #errorIX = 0l errorIY = 0
+        #d_errorX = 0; d_errorY = 0
+        #past_errorX = 0; past_errorY = 0
 
         max_dist = .5
 
-        currentX = x_displacement
-        currentY = y_displacement
-        # Implement moving average
-        errorX = 0 - currentX
-        errorY = 0 - currentY
-
+        ''' I and D will not work, variable is only in this frame'''
         #errorIX = errorIX + errorX
         #errorIY = errorIY + errorY
 
@@ -69,33 +52,29 @@ class control_loop(object):
         cmdX = Kp * errorX #+ Ki * errorIX + Kd * d_errorX
         cmdY = Kp * errorY #+ Ki * errorIX + Kd * d_errorY
 
-        percent1 = 0 # x1
-        percent2 = 0 # x2
-        percent3 = 0 # y1
-        percent4 = 0 # y2
+        XA = 0 # POINTED IN +x
+        XB = 0 # POINTED IN -x
+        YA = 0 # POINTED IN +y
+        YB = 0 # POINTED IN -y
+
         # Hypothetical Max = .5m
         # Velocity = distance/time
+        
         offset = 400
 
+        '''this does not make sense'''
         if cmdX <= 0:
-            #send to x1 motor
-            percent1 = 1500 - 400*cmdX/max_dist 
-            percent2 = 1500 - 400*cmdX/max_dist
-
+            XA = 1500 - (offset/max_dist)*cmdX 
+            XB = 1500 - (offset/max_dist)*cmdX
         else:
-            #send to x2 motor
-            percent1 = 1500 + 400*cmdX/max_dist
-            percent2 = 1500 + 400*cmdX/max_dist
-
+            XA = 1500 + (offset/max_dist)*cmdX
+            XB = 1500 + (offset/max_dist)*cmdX
 
         if cmdY <= 0:
-            #send to y1 motor
-            percent3 = 1500 - 400*cmdY/max_dist
-            percent4 = 1500 - 400*cmdY/max_dist
-
+            YA = 1500 - (offset/max_dist)*cmdY
+            YB = 1500 - (offset/max_dist)*cmdY
         else:
-            #send to y2 motor
-            percent3 = 1500 + 400*cmdY/max_dist
-            percent4 = 1500 + 400*cmdY/max_dist
+            YA = 1500 + (offset/max_dist)*cmdY
+            YB = 1500 + (offset/max_dist)*cmdY
             
-        return [percent1, percent2, percent3, percent4]
+        return [XA, XB, YA, YB]

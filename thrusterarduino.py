@@ -6,19 +6,19 @@ import time # Module needed to add delays in the code
 #initialize serial
 ser = None
 
-#initialize thruster power to 0
-thruster_power = [1500, 1500, 1500, 1500]
+#initialize thruster speed to 0
+thruster_speed = [1500, 1500, 1500, 1500]
 
 
 '''
 SETUP THRUSTER COMMUNICATION
 run everytime stationkeeping mode is entered
 '''
-def thruster_write_init():
+def thruster_write_init(port):
   global ser
 
   try:
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+    ser = serial.Serial(port, 9600, timeout=1)
     ser.flush()
   except: 
     ser = None
@@ -43,14 +43,15 @@ def thruster_write_init():
       print("SERIAL IS GOOD YAY")
     except: print("error writing to arduino :(")
 
-def thruster_write_power(values):
+def thruster_write_speed(values):
   #convert PID output into values
-  global thruster_power
-  thruster_power = values
+  #right now just passed though, no conversion needed
+  global thruster_speed
+  thruster_speed = values
 
-def thruster_set_power():
+def thruster_send_speed():
   global ser
-  send_string = (str(thruster_power[0]) + ", " + str(thruster_power[1]) + ", "  + str(thruster_power[2]) + ", "  + str(thruster_power[3]) +"\n")
+  send_string = (str(thruster_speed[0]) + ", " + str(thruster_speed[1]) + ", "  + str(thruster_speed[2]) + ", "  + str(thruster_speed[3]) +"\n")
   print("sending string now: " + send_string)
 
   try:
@@ -65,10 +66,10 @@ def thruster_set_power():
   # except: pass
     
 def thruster_reset():
-  #directly reset power
-  global thruster_power
-  thruster_power = [1500, 1500, 1500, 1500]
-  thruster_set_power()
+  #directly reset speed
+  global thruster_speed
+  thruster_speed = [1500, 1500, 1500, 1500]
+  thruster_send_speed()
 
 def thruster_write_stop():
   global ser
