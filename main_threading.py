@@ -9,15 +9,18 @@ from threading import Thread
 from time import sleep
 
 thruster_arduino_port = '/dev/ttyACM0'
-pixhawk_port = '/dev/ttyUSB0,57600'
+pixhawk_port0 = '/dev/ttyUSB0,57600'
+pixhawk_port1 = '/dev/ttyUSB1,57600'
 
 '''
 THREADING PERIODS (delay seconds)
 '''
 
 input_period = 0.1
-data_read_period = 0.1
-stationkeep_period = 0.25
+# data_read_period = 0.1
+# stationkeep_period = 0.25
+data_read_period = 0.5
+stationkeep_period = 1
 
 '''
 STATES & INPUTS
@@ -65,13 +68,21 @@ def state_input():
 PIXHAWK DATA READING
 '''
 try:
-    PX = readdata.PX_sensors(pixhawk_port)
+    print('trying px port: ' + str(pixhawk_port0))
+    PX = readdata.PX_sensors(pixhawk_port0)
     print('connected to PX')
-    PX.request_messages()
+    PX.request_messages('SCALED_IMU2')
     print('PX messages requested')
 except:
-    PX = None
-    print('PX connection failed. rerun code to try again')
+    try:
+        print('trying px port: ' + str(pixhawk_port1))
+        PX = readdata.PX_sensors(pixhawk_port1)
+        print('connected to PX')
+        PX.request_messages('SCALED_IMU2')
+        print('PX messages requested')
+    except:
+        PX = None   
+        print('PX connection failed. rerun code to try again')
 
 def px_update_data():
     while not PX == None:
@@ -85,7 +96,7 @@ STATIONKEEPING CONTROL LOOP
 def stationkeep():
     while True:               
         sleep(stationkeep_period)
-
+        # print(PX)
         if stationkeep_mode and not PX == None:
             #INITIALIZE THRUSTER COMMUNICATION
             #INITIALIZE CONTROL LOOP
@@ -98,7 +109,7 @@ def stationkeep():
                 controller = stationkeeping.control_loop(PX.ax0, PX.ay0)
 
             #INTEGRATES IMU DATA
-            controller.updatexy(PX.get_ax(), PX.get_ay(), stationkeep_period)
+            controller.update_xy(PX.get_acc()['x'], PX.get_acc()['y'], stationkeep_period)
 
             #CALCULATE THRUSTER SPEED
             thruster_speeds = controller.PID()

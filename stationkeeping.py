@@ -10,6 +10,8 @@ class control_loop(object):
         #ax and ay are arrays of the last k inputs
         axi_new = numpy.average(ax_new)
         ayi_new = numpy.average(ay_new)
+
+        print('C ACC OUTPUT' + str(axi_new) + ' ' + str(ayi_new))
         
         #integrate using input & previous cycle input
         vxi_new = self.vx + dt * (axi_new - self.ax)
@@ -22,6 +24,8 @@ class control_loop(object):
         self.ax, self.ax = axi_new, ayi_new
         self.vx, self.vy = vxi_new, vyi_new
 
+        print('C POS OUTPUT' + str(self.x) + ' ' + str(self.y))
+
     def PID(self):
         '''
         ERROR: x, y displacement is (0, 0) to (self.x, self.y)
@@ -29,7 +33,7 @@ class control_loop(object):
         errorX = - self.x
         errorY = - self.y
 
-        Kp = 0
+        Kp = 100
         #Kd = 0
         #Ki = 0
 
@@ -51,6 +55,9 @@ class control_loop(object):
 
         cmdX = Kp * errorX #+ Ki * errorIX + Kd * d_errorX
         cmdY = Kp * errorY #+ Ki * errorIX + Kd * d_errorY
+
+        if cmdX > max_dist: cmdX = max_dist
+        if cmdY > max_dist: cmdY = max_dist
 
         XA = 0 # POINTED IN +x
         XB = 0 # POINTED IN -x

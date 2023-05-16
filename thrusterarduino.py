@@ -104,10 +104,10 @@ if __name__ == "__main__":
     except: print("error writing to arduino :(")
     
     # Do nothing for 500 milliseconds (0.5 seconds)
-    time.sleep(0.1)
+    time.sleep(1)
   
     # Receive data from the Arduino and print
-    # try:
-    #   receive_string = ser.readline().decode('utf-8').rstrip()
-    #   print(receive_string)
-    # except: pass
+    try:
+      receive_string = ser.readline().decode('utf-8').rstrip()
+      print(receive_string)
+    except: pass
