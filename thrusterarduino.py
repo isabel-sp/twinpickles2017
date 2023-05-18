@@ -30,7 +30,7 @@ def thruster_write_init(port):
     print("SENDING FIRST COMMANDS")
   
     zero = ("1500, 1500, 1500, 1500" +"\n")
-    slow = ("1525, 1525, 1525, 1525" +"\n")
+    slow = ("1550, 1550, 1550, 1550" +"\n")
 
     #try sending first 3 commands to serial!
     try:
@@ -51,6 +51,7 @@ def thruster_write_speed(values):
 
 def thruster_send_speed():
   global ser
+  global thruster_speed
   send_string = (str(thruster_speed[0]) + ", " + str(thruster_speed[1]) + ", "  + str(thruster_speed[2]) + ", "  + str(thruster_speed[3]) +"\n")
   print("sending string now: " + send_string)
 
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     if t0 >= 1600: t0 = 1500
     else: t0 = t0 + 25
 
-    values = [t0, 1550, 1550, 1550]
+    values = [t0, t0, t0, t0]
     send_string = (str(values[0]) + ", " + str(values[1]) + ", "  + str(values[2]) + ", "  + str(values[3]) +"\n")
     print("sending string now: " + send_string)
     

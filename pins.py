@@ -24,3 +24,7 @@ class signal_pin(object):
     
     def getvalue(self):
         return self.value
+    
+if __name__ == "__main__":
+    s = signal_pin(17)
+    s.set(1)

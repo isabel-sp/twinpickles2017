@@ -16,10 +16,10 @@ pixhawk_port1 = '/dev/ttyUSB1,57600'
 THREADING PERIODS (delay seconds)
 '''
 
-input_period = 0.1
+input_period = 0.5
 # data_read_period = 0.1
 # stationkeep_period = 0.25
-data_read_period = 0.5
+data_read_period = 0.2
 stationkeep_period = 1
 
 '''
@@ -105,8 +105,11 @@ def stationkeep():
                 thrusterarduino.thruster_write_init(thruster_arduino_port)
 
             if controller == None: 
+                PX.set_zero()
                 print("starting controller now!")
-                controller = stationkeeping.control_loop(PX.ax0, PX.ay0)
+                controller = stationkeeping.control_loop(PX.get_acc()['x'], PX.get_acc()['y'])
+                
+
 
             #INTEGRATES IMU DATA
             controller.update_xy(PX.get_acc()['x'], PX.get_acc()['y'], stationkeep_period)

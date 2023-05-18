@@ -1,6 +1,7 @@
 """
 Connect to Pixhawk and request messages
 """
+import numpy
 
 # Import mavutil
 from pymavlink import mavutil
@@ -12,16 +13,16 @@ class PX_sensors(object):
         # self.master.reboot_autopilot()
 
         #NEED TO ADD: CALIBRATION MEASUREMENTS
-        self.ax0 = 20
-        self.ay0 = 25
-        self.acc = {'x': [self.ax0], 'y': [self.ay0]}
+        self.ax0 = 0
+        self.ay0 = 0
+        self.acc = {'x': [], 'y': []}
 
     def get_acc(self): return self.acc
 
     #converts raw IMU data to boat reference frame
     def convert_acc(self, ax, ay):
         c = math.sqrt(2)/2
-        return [c*ax + c*ay, -c*ax + c*ay]
+        return [(int)(c*ax + c*ay), (int)(-c*ax + c*ay)]
 
     def request_message_interval(self, message_input: str, frequency_hz: float):
         message_name = "MAVLINK_MSG_ID_" + message_input
@@ -35,26 +36,37 @@ class PX_sensors(object):
     def request_messages(self, id):
         self.request_message_interval(id, 10)
 
+    def set_zero(self):
+        self.ax0 = self.ax0 + numpy.average(self.acc['x'])
+        self.ay0 = self.ay0 + numpy.average(self.acc['y'])
+        print("ZEROED")
+        print(numpy.average(self.acc['x']))
+        print("ZEROED")
+
+
     def read_imu_data(self):
         if self.master:
             msg = self.master.recv_match()
             if not msg:
                 pass
             elif msg.get_type() == 'SCALED_IMU2':
-                print('IMU x y z acc', ((float)(msg.to_dict()['xacc'])), ((float)(msg.to_dict()['yacc'])), ((float)(msg.to_dict()['zacc'])))
+                # print('IMU x y z acc', ((float)(msg.to_dict()['xacc'])), ((float)(msg.to_dict()['yacc'])), ((float)(msg.to_dict()['zacc'])))
 
                 if (len(self.acc['x']) > 3):
                     self.acc['x'].pop(0)
                     self.acc['y'].pop(0)
                     # self.acc['z'].pop(0)
+
                 # print(msg.to_dict()['xacc'])
                 # print(msg.to_dict()['yacc'])
-                acc_x = (float)(msg.to_dict()['xacc'])
-                acc_y = (float)(msg.to_dict()['yacc'])
+                acc_x = (float)(msg.to_dict()['xacc']) 
+                acc_y = (float)(msg.to_dict()['yacc']) 
                 converted_xy = self.convert_acc(acc_x, acc_y)
-                print(converted_xy)
-                self.acc['x'].append(converted_xy[0])
-                self.acc['y'].append(converted_xy[1])
+                
+                self.acc['x'].append(converted_xy[0] - ((int)(self.ax0)))
+                self.acc['y'].append(converted_xy[1] - ((int)(self.ay0)))
+
+                print(converted_xy, converted_xy[0], self.ax0)
                 # self.acc['z'].append(self.convert_acc((float)(msg.to_dict()['zacc'])))
             # else:
             #     print(msg.to_dict())
@@ -66,4 +78,4 @@ if __name__ == "__main__":
 
     while True:
         PX.read_imu_data()
-        print(PX.get_acc())
+        # print(PX.get_acc())
